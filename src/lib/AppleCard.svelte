@@ -1,95 +1,72 @@
 <script lang="ts">
 	import { onMount } from 'svelte';
 
-	export let backgroundImage;
+	// export let backgroundImage;
+	export let rounded: boolean = true;
+	export let titleAlwaysVisible = false;
 
-	let container;
-	let card;
-	let content;
+	let container: HTMLDivElement;
+	let card: HTMLDivElement;
+	let content: HTMLDivElement;
+	let parallaxContents: HTMLDivElement;
 
+	let reflection: HTMLSpanElement;
+	let shadow: HTMLSpanElement;
+
+	let mediaQuery: undefined | MediaQueryList;
 	onMount(() => {
+		// Gets user's browser preferences
+		mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
+
+		// Allow content to be tabbed to
 		content.setAttribute('tabindex', '0');
 	});
 
-	// Handling Tab Focus
-	const handleFocus = (event: MouseEvent) => {
-		const width = card.clientWidth;
-		const height = card.clientHeight;
+	let hover: boolean = false;
 
-		const perspective = Math.max(width, height);
-
-		container.style.perspective = perspective * 2.5 + 'px';
-	};
-
-	// Handling Blur
-	const handleBlur = (event: MouseEvent) => {
-		cleanup(card);
-	};
-
-	// Handling Mouse Movement
 	const handleStart = (event: MouseEvent) => {
-		content.focus();
-		card.classList.add('hover');
+		// content.focus();
+		hover = true;
 		handleMove(event);
 	};
 
+	// Handling mouse movement over element
 	const handleMove = (event: MouseEvent) => {
-		event.preventDefault(); // TODO: Need workaround for touch devices because this prevents clicking on links
+		// Abort if mediaQuery does not exist or does not match
+		// if (!mediaQuery || !mediaQuery.matches) return;
 
-		let element = card;
+		// Mouse position on the card
+		const posX = event.offsetX;
+		const posY = event.offsetY;
 
-		if (!element.classList.contains('hover')) {
-			return;
-		}
-
-		const mediaQuery = window.matchMedia('(prefers-reduced-motion: reduce)');
-
-		if (
-			element.classList.contains('with-shadow') &&
-			!element.querySelector('.shadow') &&
-			mediaQuery &&
-			!mediaQuery.matches
-		) {
-			const shadow = document.createElement('span');
-			shadow.classList.add('shadow');
-			element.prepend(shadow);
-		}
-
-		if (!element.querySelector('.reflection') && mediaQuery && !mediaQuery.matches) {
-			const reflection = document.createElement('span');
-			reflection.classList.add('reflection');
-			element.prepend(reflection);
-		}
-
-		let posX = event.offsetX;
-		let posY = event.offsetY;
-
-		const width = element.clientWidth;
-		const height = element.clientHeight;
+		// Calculate needed perspecitve and angle changes
+		const width = card.clientWidth;
+		const height = card.clientHeight;
 		const angleY = ((width / 2 - posX) / width) * 10;
 		const angleX = (((height / 2 - posY) * -1) / height) * 10;
 		const translateX = (((width / 2 - posX) * -1) / width) * 10;
 		const translateY = (((height / 2 - posY) * -1) / height) * 10;
 
+		// Change container perspective
 		const perspective = Math.max(width, height);
-
 		container.style.perspective = perspective * 2.5 + 'px';
 
-		if (mediaQuery && !mediaQuery.matches) {
-			element.style.transform =
-				'translateZ(4rem) rotateY(' +
-				angleY +
-				'deg) rotateX(' +
-				angleX +
-				'deg) translateX(' +
-				translateX +
-				'px) translateY(' +
-				translateY +
-				'px)';
-		}
+		// Change apply transformations to the card
+		card.style.transform =
+			'translateZ(4rem) rotateY(' +
+			angleY +
+			'deg) rotateX(' +
+			angleX +
+			'deg) translateX(' +
+			translateX +
+			'px) translateY(' +
+			translateY +
+			'px)';
 
-		element.querySelectorAll('.parallax-content').forEach((parallaxContent, layer) => {
-			if (mediaQuery && !mediaQuery.matches) {
+		// Apply transformation to all parallax elements
+		Array.prototype.slice
+			.call(parallaxContents.children)
+			.forEach((parallaxContent, layer: number) => {
 				layer++;
 				const modifier = !parallaxContent.classList.contains('reverse') ? -0.65 : 0.2;
 				parallaxContent.style.transform =
@@ -98,104 +75,82 @@
 					'px) translateY(' +
 					translateY * modifier * layer +
 					'px)';
-			}
-		});
+			});
 
-		const reflection = element.querySelector('.reflection');
+		// Apply transformation to reflection
+		reflection.style.width = perspective * 1.5 + 'px';
+		reflection.style.height = perspective * 1.5 + 'px';
+		reflection.style.margin = perspective * -0.75 + 'px 0 0 ' + perspective * -0.75 + 'px';
+		reflection.style.transform =
+			'translateY(' + (posY - height / 2) + 'px) translateX(' + (width * 0.1 + posX * 0.8) + 'px)';
 
-		if (reflection && mediaQuery && !mediaQuery.matches) {
-			reflection.style.width = perspective * 1.5 + 'px';
-			reflection.style.height = perspective * 1.5 + 'px';
-			reflection.style.margin = perspective * -0.75 + 'px 0 0 ' + perspective * -0.75 + 'px';
-			reflection.style.transform =
-				'translateY(' +
-				(posY - height / 2) +
-				'px) translateX(' +
-				(width * 0.1 + posX * 0.8) +
-				'px)';
-		}
-
-		const shadow = element.querySelector('.shadow');
-
-		if (shadow) {
-			if (mediaQuery && !mediaQuery.matches && posY < height / 3) {
-				const opacity = (1 / (height / 3)) * (height / 3 - posY);
-				shadow.style.opacity = opacity.toString();
-				shadow.style.boxShadow =
-					'inset 0 ' + opacity * -1 + 'em .4em -.5em rgba(0,0,0,' + Math.min(opacity, 0.35) + ')';
-			} else {
-				shadow.style.opacity = null;
-				shadow.style.boxShadow = null;
-			}
+		// Apply transformation to shadow
+		if (posY < height / 3) {
+			const opacity = (1 / (height / 3)) * (height / 3 - posY);
+			shadow.style.opacity = opacity.toString();
+			shadow.style.boxShadow =
+				'inset 0 ' + opacity * -1 + 'em .4em -.5em rgba(0,0,0,' + Math.min(opacity, 0.35) + ')';
 		}
 	};
 
-	function handleEnd(event) {
+	const handleEnd = (event: MouseEvent) => {
 		content.blur();
-		cleanup(card);
-	}
+		hover = false;
 
-	// Cleanup the added classes
-	const cleanup = (element) => {
-		element.classList.remove('hover');
+		card.style.transform = '';
 
-		element.style.transform = null;
-
-		element.querySelectorAll('.parallax-content').forEach((parallaxContent) => {
+		// Reset everything to the defaults
+		Array.prototype.slice.call(parallaxContents.children).forEach((parallaxContent) => {
 			parallaxContent.style.transform = null;
 		});
 
-		const reflection = element.querySelector('.reflection');
-
-		if (reflection) {
-			reflection.style.transform = null;
-		}
-
-		const shadow = element.querySelector('.shadow');
-
-		if (shadow) {
-			shadow.style.boxShadow = null;
-			shadow.style.opacity = null;
-		}
+		reflection.style.transform = '';
+		shadow.style.boxShadow = '';
+		shadow.style.opacity = '';
 	};
 </script>
-
-<!-- <svelte:window
-	on:resize={() => {
-		if (!card) return;
-
-		const size = Math.max(card.clientWidth, card.clientHeight);
-		card.style.fontSize = size / 3.5 + 'px';
-	}}
-/> -->
 
 <div class="apple-tv-card-container" bind:this={container}>
 	<div
 		role="group"
 		class="apple-tv-card"
 		class:no-title={!$$slots.title}
+		class:hover
+		class:not-rounded={!rounded}
 		bind:this={card}
 		on:mouseenter={handleStart}
 		on:mousemove={handleMove}
 		on:mouseleave={handleEnd}
 	>
+		<!-- Added effects for on hover -->
+		<span class="shadow" bind:this={shadow} />
+		<span class="reflection" bind:this={reflection} />
+
 		<div
 			class="content"
-			style="background-image:url({backgroundImage});"
 			bind:this={content}
-			on:focus={handleFocus}
+			on:focus={() => {
+				const width = card.clientWidth;
+				const height = card.clientHeight;
+
+				const perspective = Math.max(width, height);
+
+				container.style.perspective = perspective * 2.5 + 'px';
+			}}
 		>
 			<!-- Any non-parallax content -->
 			<slot name="nonparallax" />
 		</div>
-		<div class="parallax-content">
+		<div class="parallax-content" bind:this={parallaxContents}>
 			<!-- Example -->
 			<!-- End: Example -->
 			<slot name="parallax" />
 		</div>
 	</div>
 
-	<div class="apple-tv-card-title"><slot name="title" /></div>
+	<div class="apple-tv-card-title" class:always-visible={titleAlwaysVisible}>
+		<slot name="title" />
+	</div>
 </div>
 
 <style lang="scss">
@@ -266,7 +221,10 @@
 				width: 100%;
 				border: none;
 				outline: none;
-				background-image: linear-gradient(to bottom, #555, #000);
+				background-image: var(--background-image, none);
+				background-repeat: var(--background-repeat, no-repeat);
+				background-size: var(--background-size, cover);
+				// background-image: linear-gradient(to bottom, #555, #000);
 				background-position: center center;
 				padding-bottom: 58%;
 				z-index: 1;

@@ -2,26 +2,52 @@
 	import AppleCard from '$lib/AppleCard.svelte';
 </script>
 
-<h1>Welcome to your library project</h1>
-<p>Create your package using @sveltejs/package and preview/showcase your work with SvelteKit</p>
-<p>Visit <a href="https://kit.svelte.dev">kit.svelte.dev</a> to read the documentation</p>
+<div class="title">
+	<h1>Svelte Apple TV Card</h1>
+	<h3>Hover above to try it!</h3>
+	<p>
+		Visit the <a href="https://github.com/Karsten-Larson/svelte-apple-tv-card">Github Repo</a> to view
+		source code
+	</p>
+</div>
 
 <div class="container">
 	<AppleCard
-		backgroundImage={'https://media.istockphoto.com/id/514047994/photo/dark-wall.webp?b=1&s=170667a&w=0&k=20&c=6UN1w6v2YGEkXrFaaxf7BRAJZWmi-Elql0punDoWgtQ='}
+		rounded={false}
+		--background-image="url('https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSeqXt58PjzX23twDkHZHBbpH72I98IbEK12w&s')"
 	>
-		<svelte:fragment slot="nonparallax">
-			<p>Hello</p>
-		</svelte:fragment>
+		<svelte:fragment slot="nonparallax"></svelte:fragment>
 		<svelte:fragment slot="parallax">
-			<div style="width:5em;height:5em;border:1em dashed black;"></div>
+			<div style="display: block;">
+				<div style="width:5em;height:5em;border:1em dashed white;"></div>
+				<p style="color: white; text-align: center;">Title page</p>
+			</div>
 		</svelte:fragment>
 		<svelte:fragment slot="title">Title</svelte:fragment>
+	</AppleCard>
+
+	<AppleCard --background-image="linear-gradient(to bottom, #555, #000)">
+		<svelte:fragment slot="nonparallax"></svelte:fragment>
+		<svelte:fragment slot="parallax">
+			<img
+				src="https://cdn-icons-png.flaticon.com/512/25/25231.png"
+				alt="Github"
+				style="width: 200px; height:200px;"
+			/>
+		</svelte:fragment>
+		<svelte:fragment slot="title">Fancy Title banner</svelte:fragment>
 	</AppleCard>
 </div>
 
 <style>
+	.title {
+		margin-top: 80px;
+		margin-bottom: 30px;
+		text-align: center;
+	}
+
 	.container {
+		margin: auto;
 		width: 800px;
 		display: grid;
 		place-items: center;
